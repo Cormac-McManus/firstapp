@@ -38,18 +38,12 @@ app.get
     res.send(books);
 })
 
-app.get('/books/:id',(req,res) => {
+app.get('/books/:id', (req,res) => {
+
     let id = req.params.id;
-    if (books.length >= id)
-    {
-        res.json(books[id])
-        .status(201);
-    }
-    else
-    {
-        res.status(404);
-    }
-})
+     res.json(books[id]);
+ })
+
 
 app.delete('/books/:id',(req,res) => {
     let id = req.params.id;
