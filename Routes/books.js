@@ -1,33 +1,32 @@
 const express = require('express');
-const Joi = require('joi');
-
 const router = express.Router();
+const Joi = require('joi');
+const { Book, validate } = require('../models/books');
+// Notethe above line is shorthand for 
+/*
+const bookImports = require('../models/books');
+const Book = bookImports.Book;
+const validate = bookImports.validate;
+*/
 
 
-let books = [
-    {
-        "bookId": 1,
-        "name":"Gangsta Granny",
-        "quantity": 3
-    },
-    {
-        "bookId": 2,
-        "name":"The Boy in the Dress",
-        "quantity": 3
-    },
-    {
-        "bookId": 3,
-        "name": "Bad Dad"
-    },
-];
 
-router.post('/books', (req, res) => {
+router.post('/', async (req, res) => {
 
-    const newBookId = books.length;
+    let book = new Book(req.body);
+
+    //const newBookID = books.length;
   
-    const book = { bookId: newBookId, ...req.body };
+    //const book = { bookId: newBookId, ...req.body };
 
-    const result = validateBook(req.body)
+    const result = validate(req.body);
+
+    book = await book.save();
+
+    res.location(`/${book._id}`)
+    .status(201)
+    .json(book);
+
 
     // Request Validation
     if (result.error)
@@ -36,23 +35,20 @@ router.post('/books', (req, res) => {
         return;
     }
   
-    books.push(book);
+    /*books.push(book);
   
-    res.location(`/${newBookId}`)
-      .status(201)
-      .json(book);
-  
-    console.log(`book name is ${book.name} number of book(s) is ${books.length}`);
+    console.log(`book name is ${book.name} number of book(s) is ${books.length}`);*/
   
 });
   
 
-router.get 
-('/', (req, res) => {
-    res.send(books);
-})
+router.get('/', async (req, res) => {
+    const books = await Book.find();
+    res.json(books);
+  })
+  
 
-app.get('/:id',(req,res) => {
+router.get('/:id',(req,res) => {
     const id = req.params.id;
 
     const book = books.find(b => b.bookId === parseInt(req.params.id))
@@ -88,7 +84,7 @@ router.put('/:id', (req, res) => {
 
     const id = req.params.id;
 
-    const result = validateBook(req.body)
+    const result = validate(req.body)
 
     // Request Validation
     if (result.error)
@@ -109,13 +105,5 @@ router.put('/:id', (req, res) => {
     book.quantity = req.body.quantity;
     res.send(book);
 })
-
-function validateBook(book) {
-    const schema = Joi.object({
-      name: Joi.string().min(3).required(),
-      quantity: Joi.number().integer().min(0)
-    })
-    return schema.validate(book);
-}  
 
 module.exports = router
