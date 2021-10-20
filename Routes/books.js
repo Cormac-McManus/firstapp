@@ -1,3 +1,4 @@
+const { json } = require('express');
 const express = require('express');
 const router = express.Router();
 const Joi = require('joi');
@@ -48,43 +49,42 @@ router.get('/', async (req, res) => {
   })
   
 
-router.get('/:id',(req,res) => {
+router.get('/:id', async (req,res) => {
     const id = req.params.id;
 
-    const book = books.find(b => b.bookId === parseInt(req.params.id))
+    const book = await Book.findById(id)
 
     if (!book) {
-        res.status(404);
-        res.json({ error: 'not found'});
-        return
+    res.status(404);
+    res.json({ error: 'not found'});
+    return
     }
-
+    
     res.json(book);
+    
 })
 
-router.delete('/:id', (req, res) => {
-
+router.delete('/:id', async (req, res) => {
+    
     const id = req.params.id;
-  
-    const book = books.find(b => b.bookId === parseInt(req.params.id))
+    const book = await Book.findByIdAndDelete(id)
+    const books = await Book.find();
   
     if (!book) {
       res.status(404).json(`book with that ID {id} was not found`);
       return;
     }
-  
-    const index = books.indexOf(book);
-  
-    books.splice(index, 1);
-    res.send(book);
+
+    res.json(books)
   
 })
 
-router.put('/:id', (req, res) => {
+router.put('/:id', async (req, res) => {
 
     const id = req.params.id;
-
-    const result = validate(req.body)
+    const result = validate(req.body);
+    const _quantity = (req.body.quantity);
+    const _name = req.body.name;
 
     // Request Validation
     if (result.error)
@@ -93,9 +93,19 @@ router.put('/:id', (req, res) => {
         return;
     }
   
-    const book = books.find(b => b.bookId === parseInt(req.params.id))
+    Book.findByIdAndUpdate({_id: id}, {...req.body}).
+    then((result) => {
+        if (result) {
+            res.status(200).send({ message: 'updated' })
+        }
+        else {
+            res.status(404).send({ message: 'not found' })
+        }
+    })
+    .catch((error) =>
+        res.status(404).send({ message: 'not found' + error }));
   
-    if (!book) {
+    /*if (!book) {
       res.status(404).json(`book with that ID {req.params.id} was not found`);
       return;
     }
@@ -103,7 +113,7 @@ router.put('/:id', (req, res) => {
     console.log(`changing book ${book.name}`);
     book.name = req.body.name;
     book.quantity = req.body.quantity;
-    res.send(book);
+    res.send(book);*/
 })
 
 module.exports = router
