@@ -22,7 +22,7 @@ router.post('/', async (req, res) => {
 
     const result = validate(req.body);
 
-    book = await book.save();
+    let bookSaved = await book.save();
 
     res.location(`/${book._id}`)
     .status(201)
@@ -35,16 +35,59 @@ router.post('/', async (req, res) => {
         res.status(400).json(result.error);
         return;
     }
-  
-    /*books.push(book);
-  
-    console.log(`book name is ${book.name} number of book(s) is ${books.length}`);*/
+
+    console.log(bookSaved);
   
 });
   
 
 router.get('/', async (req, res) => {
-    const books = await Book.find();
+    const { title, year_written, limit, pagenumber, pagesize } = req.query;
+
+    let filter = {};
+
+    // Title filter
+    if (title) {
+        filter.title = { $regex: `${title}`, $options: 'i' }
+    }
+
+    //Year Filter
+    const yearNumber = parseInt(year_written)
+
+  
+  if (!isNaN(yearNumber)) {
+    Number.isInteger(year_written)
+    filter.year_written = yearNumber
+  }
+
+  //Limit results
+  let limitNumber = parseInt(limit)
+  if (isNaN(limitNumber)) {
+    limitNumber = 0
+  }
+  filter.limit = limitNumber;
+
+  //Page size 
+  let pageSizeNumber = parseInt(pagesize);
+
+  if (isNaN(pageSizeNumber)) {
+    pageSizeNumber = 0
+  }
+  let pageNumberNumber = parseInt(pagenumber);
+
+  if (isNaN(pageNumberNumber)) {
+    pageNumberNumber = 1
+  }
+
+  console.table(filter);
+
+
+    //Filter, sorting, select methods.
+    const books = await Book.find(filter)
+    .limit(limitNumber)
+    .sort({ year_written: "ascending", price: 1})
+    .skip((pageNumberNumber -1)*pageSizeNumber)
+    .select("author.name");
     res.json(books);
   })
   
@@ -83,8 +126,14 @@ router.put('/:id', async (req, res) => {
 
     const id = req.params.id;
     const result = validate(req.body);
-    const _quantity = (req.body.quantity);
-    const _name = req.body.name;
+
+    const _title = req.body.title;
+    const _yearWritten = req.body.year_written
+    const _authorname = req.body.author.name;
+    const _authornationality = req.body.author.nationality;
+    const _edition = req.body.edition;
+    const _price = req.body.price;
+    const _tags = req.body.tags;
 
     // Request Validation
     if (result.error)
@@ -105,15 +154,11 @@ router.put('/:id', async (req, res) => {
     .catch((error) =>
         res.status(404).send({ message: 'not found' + error }));
   
-    /*if (!book) {
+    if (!book) {
       res.status(404).json(`book with that ID {req.params.id} was not found`);
       return;
     }
-  
-    console.log(`changing book ${book.name}`);
-    book.name = req.body.name;
-    book.quantity = req.body.quantity;
-    res.send(book);*/
+    res.send(book);
 })
 
 module.exports = router
